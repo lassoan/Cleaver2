@@ -96,4 +96,4 @@ ENDFOREACH(header_file)
 
 # output library
 ADD_LIBRARY(cleaver STATIC ${Cleaver_HEADER_FILES} ${Cleaver_SOURCE_FILES})
-TARGET_LINK_LIBRARIES(cleaver jsoncpp)
+TARGET_LINK_LIBRARIES(cleaver jsoncpp_lib_static)

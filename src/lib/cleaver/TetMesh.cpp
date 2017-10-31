@@ -53,7 +53,7 @@
 #include <algorithm>
 #include <exception>
 #include <stdint.h>
-#include <jsoncpp/json.h>
+#include <json/json.h>
 #include "Util.h"
 #include "Matlab.h"
 #include "Status.h"

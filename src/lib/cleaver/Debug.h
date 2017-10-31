@@ -45,7 +45,7 @@
 #include "vec3.h"
 #include "Vertex.h"
 #include "HalfEdge.h"
-#include <jsoncpp/json.h>
+#include <json/json.h>
 
 #include <string>
 #include <exception>
