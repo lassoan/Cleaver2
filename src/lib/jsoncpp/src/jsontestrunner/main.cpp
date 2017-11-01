@@ -1,10 +1,7 @@
-// Copyright 2007-2010 Baptiste Lepilleur and The JsonCpp Authors
+// Copyright 2007-2010 Baptiste Lepilleur
 // Distributed under MIT license, or public domain if desired and
 // recognized in your jurisdiction.
 // See file LICENSE for detail or copy at http://jsoncpp.sourceforge.net/LICENSE
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 /* This executable is used for testing parser/writer using real JSON files.
  */
@@ -20,14 +17,14 @@
 
 struct Options
 {
-  JSONCPP_STRING path;
+  std::string path;
   Json::Features features;
   bool parseOnly;
-  typedef JSONCPP_STRING (*writeFuncType)(Json::Value const&);
+  typedef std::string (*writeFuncType)(Json::Value const&);
   writeFuncType write;
 };
 
-static JSONCPP_STRING normalizeFloatingPointStr(double value) {
+static std::string normalizeFloatingPointStr(double value) {
   char buffer[32];
 #if defined(_MSC_VER) && defined(__STDC_SECURE_LIB__)
   sprintf_s(buffer, sizeof(buffer), "%.16g", value);
@@ -35,18 +32,18 @@ static JSONCPP_STRING normalizeFloatingPointStr(double value) {
   snprintf(buffer, sizeof(buffer), "%.16g", value);
 #endif
   buffer[sizeof(buffer) - 1] = 0;
-  JSONCPP_STRING s(buffer);
-  JSONCPP_STRING::size_type index = s.find_last_of("eE");
-  if (index != JSONCPP_STRING::npos) {
-    JSONCPP_STRING::size_type hasSign =
+  std::string s(buffer);
+  std::string::size_type index = s.find_last_of("eE");
+  if (index != std::string::npos) {
+    std::string::size_type hasSign =
         (s[index + 1] == '+' || s[index + 1] == '-') ? 1 : 0;
-    JSONCPP_STRING::size_type exponentStartIndex = index + 1 + hasSign;
-    JSONCPP_STRING normalized = s.substr(0, exponentStartIndex);
-    JSONCPP_STRING::size_type indexDigit =
+    std::string::size_type exponentStartIndex = index + 1 + hasSign;
+    std::string normalized = s.substr(0, exponentStartIndex);
+    std::string::size_type indexDigit =
         s.find_first_not_of('0', exponentStartIndex);
-    JSONCPP_STRING exponent = "0";
+    std::string exponent = "0";
     if (indexDigit !=
-        JSONCPP_STRING::npos) // There is an exponent different from 0
+        std::string::npos) // There is an exponent different from 0
     {
       exponent = s.substr(indexDigit);
     }
@@ -55,18 +52,17 @@ static JSONCPP_STRING normalizeFloatingPointStr(double value) {
   return s;
 }
 
-static JSONCPP_STRING readInputTestFile(const char* path) {
+static std::string readInputTestFile(const char* path) {
   FILE* file = fopen(path, "rb");
   if (!file)
-    return JSONCPP_STRING("");
+    return std::string("");
   fseek(file, 0, SEEK_END);
-  long const size = ftell(file);
-  unsigned long const usize = static_cast<unsigned long>(size);
+  long size = ftell(file);
   fseek(file, 0, SEEK_SET);
-  JSONCPP_STRING text;
+  std::string text;
   char* buffer = new char[size + 1];
   buffer[size] = 0;
-  if (fread(buffer, 1, usize, file) == usize)
+  if (fread(buffer, 1, size, file) == (unsigned long)size)
     text = buffer;
   fclose(file);
   delete[] buffer;
@@ -74,7 +70,7 @@ static JSONCPP_STRING readInputTestFile(const char* path) {
 }
 
 static void
-printValueTree(FILE* fout, Json::Value& value, const JSONCPP_STRING& path = ".") {
+printValueTree(FILE* fout, Json::Value& value, const std::string& path = ".") {
   if (value.hasComment(Json::commentBefore)) {
     fprintf(fout, "%s\n", value.getComment(Json::commentBefore).c_str());
   }
@@ -108,8 +104,8 @@ printValueTree(FILE* fout, Json::Value& value, const JSONCPP_STRING& path = ".")
     break;
   case Json::arrayValue: {
     fprintf(fout, "%s=[]\n", path.c_str());
-    Json::ArrayIndex size = value.size();
-    for (Json::ArrayIndex index = 0; index < size; ++index) {
+    int size = value.size();
+    for (int index = 0; index < size; ++index) {
       static char buffer[16];
 #if defined(_MSC_VER) && defined(__STDC_SECURE_LIB__)
       sprintf_s(buffer, sizeof(buffer), "[%d]", index);
@@ -123,11 +119,11 @@ printValueTree(FILE* fout, Json::Value& value, const JSONCPP_STRING& path = ".")
     fprintf(fout, "%s={}\n", path.c_str());
     Json::Value::Members members(value.getMemberNames());
     std::sort(members.begin(), members.end());
-    JSONCPP_STRING suffix = *(path.end() - 1) == '.' ? "" : ".";
+    std::string suffix = *(path.end() - 1) == '.' ? "" : ".";
     for (Json::Value::Members::iterator it = members.begin();
          it != members.end();
          ++it) {
-      const JSONCPP_STRING name = *it;
+      const std::string& name = *it;
       printValueTree(fout, value[name], path + suffix + name);
     }
   } break;
@@ -140,15 +136,15 @@ printValueTree(FILE* fout, Json::Value& value, const JSONCPP_STRING& path = ".")
   }
 }
 
-static int parseAndSaveValueTree(const JSONCPP_STRING& input,
-                                 const JSONCPP_STRING& actual,
-                                 const JSONCPP_STRING& kind,
+static int parseAndSaveValueTree(const std::string& input,
+                                 const std::string& actual,
+                                 const std::string& kind,
                                  const Json::Features& features,
                                  bool parseOnly,
                                  Json::Value* root)
 {
   Json::Reader reader(features);
-  bool parsingSuccessful = reader.parse(input.data(), input.data() + input.size(), *root);
+  bool parsingSuccessful = reader.parse(input, *root);
   if (!parsingSuccessful) {
     printf("Failed to parse %s file: \n%s\n",
            kind.c_str(),
@@ -166,36 +162,36 @@ static int parseAndSaveValueTree(const JSONCPP_STRING& input,
   }
   return 0;
 }
-// static JSONCPP_STRING useFastWriter(Json::Value const& root) {
+// static std::string useFastWriter(Json::Value const& root) {
 //   Json::FastWriter writer;
 //   writer.enableYAMLCompatibility();
 //   return writer.write(root);
 // }
-static JSONCPP_STRING useStyledWriter(
+static std::string useStyledWriter(
     Json::Value const& root)
 {
   Json::StyledWriter writer;
   return writer.write(root);
 }
-static JSONCPP_STRING useStyledStreamWriter(
+static std::string useStyledStreamWriter(
     Json::Value const& root)
 {
   Json::StyledStreamWriter writer;
-  JSONCPP_OSTRINGSTREAM sout;
+  std::ostringstream sout;
   writer.write(sout, root);
   return sout.str();
 }
-static JSONCPP_STRING useBuiltStyledStreamWriter(
+static std::string useBuiltStyledStreamWriter(
     Json::Value const& root)
 {
   Json::StreamWriterBuilder builder;
   return Json::writeString(builder, root);
 }
 static int rewriteValueTree(
-    const JSONCPP_STRING& rewritePath,
+    const std::string& rewritePath,
     const Json::Value& root,
     Options::writeFuncType write,
-    JSONCPP_STRING* rewrite)
+    std::string* rewrite)
 {
   *rewrite = write(root);
   FILE* fout = fopen(rewritePath.c_str(), "wt");
@@ -208,13 +204,13 @@ static int rewriteValueTree(
   return 0;
 }
 
-static JSONCPP_STRING removeSuffix(const JSONCPP_STRING& path,
-                                const JSONCPP_STRING& extension) {
+static std::string removeSuffix(const std::string& path,
+                                const std::string& extension) {
   if (extension.length() >= path.length())
-    return JSONCPP_STRING("");
-  JSONCPP_STRING suffix = path.substr(path.length() - extension.length());
+    return std::string("");
+  std::string suffix = path.substr(path.length() - extension.length());
   if (suffix != extension)
-    return JSONCPP_STRING("");
+    return std::string("");
   return path.substr(0, path.length() - extension.length());
 }
 
@@ -241,18 +237,18 @@ static int parseCommandLine(
     return printUsage(argv);
   }
   int index = 1;
-  if (JSONCPP_STRING(argv[index]) == "--json-checker") {
+  if (std::string(argv[index]) == "--json-checker") {
     opts->features = Json::Features::strictMode();
     opts->parseOnly = true;
     ++index;
   }
-  if (JSONCPP_STRING(argv[index]) == "--json-config") {
+  if (std::string(argv[index]) == "--json-config") {
     printConfig();
     return 3;
   }
-  if (JSONCPP_STRING(argv[index]) == "--json-writer") {
+  if (std::string(argv[index]) == "--json-writer") {
     ++index;
-    JSONCPP_STRING const writerName(argv[index++]);
+    std::string const writerName(argv[index++]);
     if (writerName == "StyledWriter") {
       opts->write = &useStyledWriter;
     } else if (writerName == "StyledStreamWriter") {
@@ -274,22 +270,22 @@ static int runTest(Options const& opts)
 {
   int exitCode = 0;
 
-  JSONCPP_STRING input = readInputTestFile(opts.path.c_str());
+  std::string input = readInputTestFile(opts.path.c_str());
   if (input.empty()) {
     printf("Failed to read input or empty input: %s\n", opts.path.c_str());
     return 3;
   }
 
-  JSONCPP_STRING basePath = removeSuffix(opts.path, ".json");
+  std::string basePath = removeSuffix(opts.path, ".json");
   if (!opts.parseOnly && basePath.empty()) {
     printf("Bad input path. Path does not end with '.expected':\n%s\n",
             opts.path.c_str());
     return 3;
   }
 
-  JSONCPP_STRING const actualPath = basePath + ".actual";
-  JSONCPP_STRING const rewritePath = basePath + ".rewrite";
-  JSONCPP_STRING const rewriteActualPath = basePath + ".actual-rewrite";
+  std::string const actualPath = basePath + ".actual";
+  std::string const rewritePath = basePath + ".rewrite";
+  std::string const rewriteActualPath = basePath + ".actual-rewrite";
 
   Json::Value root;
   exitCode = parseAndSaveValueTree(
@@ -298,7 +294,7 @@ static int runTest(Options const& opts)
   if (exitCode || opts.parseOnly) {
     return exitCode;
   }
-  JSONCPP_STRING rewrite;
+  std::string rewrite;
   exitCode = rewriteValueTree(rewritePath, root, opts.write, &rewrite);
   if (exitCode) {
     return exitCode;
@@ -314,12 +310,12 @@ static int runTest(Options const& opts)
 }
 int main(int argc, const char* argv[]) {
   Options opts;
-  try {
   int exitCode = parseCommandLine(argc, argv, &opts);
   if (exitCode != 0) {
     printf("Failed to parse command-line.");
     return exitCode;
   }
+  try {
     return runTest(opts);
   }
   catch (const std::exception& e) {
@@ -327,5 +323,3 @@ int main(int argc, const char* argv[]) {
     return 1;
   }
 }
-
-#pragma GCC diagnostic pop

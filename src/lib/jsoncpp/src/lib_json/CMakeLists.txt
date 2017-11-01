@@ -1,41 +1,13 @@
-IF( CMAKE_COMPILER_IS_GNUCXX )
-    #Get compiler version.
-    EXECUTE_PROCESS( COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
-                     OUTPUT_VARIABLE GNUCXX_VERSION )
+if( CMAKE_COMPILER_IS_GNUCXX )
+  #Get compiler version.
+  execute_process( COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
+                   OUTPUT_VARIABLE GNUCXX_VERSION )
 
-    #-Werror=* was introduced -after- GCC 4.1.2
-    IF( GNUCXX_VERSION VERSION_GREATER 4.1.2 )
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=strict-aliasing")
-    ENDIF()
-ENDIF( CMAKE_COMPILER_IS_GNUCXX )
-
-INCLUDE(CheckIncludeFileCXX)
-INCLUDE(CheckTypeSize)
-INCLUDE(CheckStructHasMember)
-INCLUDE(CheckCXXSymbolExists)
-
-check_include_file_cxx(clocale HAVE_CLOCALE)
-check_cxx_symbol_exists(localeconv clocale HAVE_LOCALECONV)
-
-IF(CMAKE_VERSION VERSION_LESS 3.0.0)
-    # The "LANGUAGE CXX" parameter is not supported in CMake versions below 3,
-    # so the C compiler and header has to be used.
-    check_include_file(locale.h HAVE_LOCALE_H)
-    SET(CMAKE_EXTRA_INCLUDE_FILES locale.h)
-    check_type_size("struct lconv" LCONV_SIZE)
-    UNSET(CMAKE_EXTRA_INCLUDE_FILES)
-    check_struct_has_member("struct lconv" decimal_point locale.h HAVE_DECIMAL_POINT)
-ELSE()
-    SET(CMAKE_EXTRA_INCLUDE_FILES clocale)
-    check_type_size(lconv LCONV_SIZE LANGUAGE CXX)
-    UNSET(CMAKE_EXTRA_INCLUDE_FILES)
-    check_struct_has_member(lconv decimal_point clocale HAVE_DECIMAL_POINT LANGUAGE CXX)
-ENDIF()
-
-IF(NOT (HAVE_CLOCALE AND HAVE_LCONV_SIZE AND HAVE_DECIMAL_POINT AND HAVE_LOCALECONV))
-    MESSAGE(WARNING "Locale functionality is not supported")
-    ADD_DEFINITIONS(-DJSONCPP_NO_LOCALE_SUPPORT)
-ENDIF()
+  #-Werror=* was introduced -after- GCC 4.1.2
+  if( GNUCXX_VERSION VERSION_GREATER 4.1.2 )
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=strict-aliasing")
+  endif()
+endif( CMAKE_COMPILER_IS_GNUCXX )
 
 SET( JSONCPP_INCLUDE_DIR ../../include )
 
@@ -70,23 +42,18 @@ ENDIF()
 IF(BUILD_SHARED_LIBS)
     ADD_DEFINITIONS( -DJSON_DLL_BUILD )
     ADD_LIBRARY(jsoncpp_lib SHARED ${PUBLIC_HEADERS} ${jsoncpp_sources})
-    SET_TARGET_PROPERTIES( jsoncpp_lib PROPERTIES VERSION ${JSONCPP_VERSION} SOVERSION ${JSONCPP_SOVERSION})
+    SET_TARGET_PROPERTIES( jsoncpp_lib PROPERTIES VERSION ${JSONCPP_VERSION} SOVERSION ${JSONCPP_VERSION_MAJOR})
     SET_TARGET_PROPERTIES( jsoncpp_lib PROPERTIES OUTPUT_NAME jsoncpp
                            DEBUG_OUTPUT_NAME jsoncpp${DEBUG_LIBNAME_SUFFIX} )
 
-    # Set library's runtime search path on OSX
-    IF(APPLE)
-        SET_TARGET_PROPERTIES( jsoncpp_lib PROPERTIES INSTALL_RPATH "@loader_path/." )
-    ENDIF()
-
     INSTALL( TARGETS jsoncpp_lib ${INSTALL_EXPORT}
-             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+         RUNTIME DESTINATION ${RUNTIME_INSTALL_DIR}
+         LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR}
+         ARCHIVE DESTINATION ${ARCHIVE_INSTALL_DIR})
 
     IF(NOT CMAKE_VERSION VERSION_LESS 2.8.11)
         TARGET_INCLUDE_DIRECTORIES( jsoncpp_lib PUBLIC
-                                   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                                   $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
                                    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/${JSONCPP_INCLUDE_DIR}>)
     ENDIF()
 
@@ -94,24 +61,20 @@ ENDIF()
 
 IF(BUILD_STATIC_LIBS)
     ADD_LIBRARY(jsoncpp_lib_static STATIC ${PUBLIC_HEADERS} ${jsoncpp_sources})
-    SET_TARGET_PROPERTIES( jsoncpp_lib_static PROPERTIES VERSION ${JSONCPP_VERSION} SOVERSION ${JSONCPP_SOVERSION})
-    # avoid name clashes on windows as the shared import lib is also named jsoncpp.lib
-    if (NOT DEFINED STATIC_SUFFIX AND BUILD_SHARED_LIBS)
-      set (STATIC_SUFFIX "_static")
-    endif ()
-    set_target_properties (jsoncpp_lib_static PROPERTIES OUTPUT_NAME jsoncpp${STATIC_SUFFIX}
-                                                         DEBUG_OUTPUT_NAME jsoncpp${STATIC_SUFFIX}${DEBUG_LIBNAME_SUFFIX})
+    SET_TARGET_PROPERTIES( jsoncpp_lib_static PROPERTIES VERSION ${JSONCPP_VERSION} SOVERSION ${JSONCPP_VERSION_MAJOR})
+    SET_TARGET_PROPERTIES( jsoncpp_lib_static PROPERTIES OUTPUT_NAME jsoncpp
+                           DEBUG_OUTPUT_NAME jsoncpp${DEBUG_LIBNAME_SUFFIX} )
 
     INSTALL( TARGETS jsoncpp_lib_static ${INSTALL_EXPORT}
-             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+         RUNTIME DESTINATION ${RUNTIME_INSTALL_DIR}
+         LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR}
+             ARCHIVE DESTINATION ${ARCHIVE_INSTALL_DIR})
 
     IF(NOT CMAKE_VERSION VERSION_LESS 2.8.11)
         TARGET_INCLUDE_DIRECTORIES( jsoncpp_lib_static PUBLIC
-                                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                                $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
                                 $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/${JSONCPP_INCLUDE_DIR}>
                                 )
-    ENDIF()
+     ENDIF()
 
 ENDIF()
